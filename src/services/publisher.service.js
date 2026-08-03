@@ -1,24 +1,20 @@
 import * as authorRepository from '../repositories/author.repository.js';
-import * as bookRepository from '../repositories/book.repository.js';
-import {Author} from "../models/index.js";
+import {sequelize} from "../config/database.js";
+import {QueryTypes} from 'sequelize';
 
 export const findPublishersByAuthor = async (authorName) => {
     const author = await authorRepository.findAuthorById(authorName);
     if (!author) {
         throw new Error(`Author with name ${authorName} not found`);
     }
-   const publishers = await bookRepository.booksSummary('publisher', 'DISTINCT', {
-       include: {
-           model: Author,
-           as: 'authors',
-           where: {
-               name: authorName
-           },
-           through: {
-               attributes: []
-           }
-       },
-       plain: false
+   const publishers = await sequelize.query(`
+      SELECT DISTINCT b.publisher 
+           FROM  books b 
+               JOIN books_authors ba  ON b.isbn = ba.isbn 
+           WHERE ba.author_name = :name;
+   `, {
+       type: QueryTypes.SELECT,
+       replacements: {name: authorName}
    })
-    return publishers.map(publisher => publisher.DISTINCT);
+    return publishers.map(p => p.publisher);
 }
