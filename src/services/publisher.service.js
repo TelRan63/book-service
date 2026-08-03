@@ -7,7 +7,7 @@ export const findPublishersByAuthor = async (authorName) => {
     if (!author) {
         throw new Error(`Author with name ${authorName} not found`);
     }
-   const books = await bookRepository.findBooks({
+   const publishers = await bookRepository.booksSummary('publisher', 'DISTINCT', {
        include: {
            model: Author,
            as: 'authors',
@@ -18,9 +18,7 @@ export const findPublishersByAuthor = async (authorName) => {
                attributes: []
            }
        },
-       attributes: ['publisher'],
-       group: ['publisher'],
-       raw: true
-    })
-    return books.map(book => book.publisher)
+       plain: false
+   })
+    return publishers.map(publisher => publisher.DISTINCT);
 }
