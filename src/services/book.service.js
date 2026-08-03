@@ -97,7 +97,38 @@ export const removeBook = async (isbn) => {
 }
 
 export const updateBookTitle = async (isbn, title) => {
-    // TODO: Implement updateBookTitle service
+    const transaction = await sequelize.transaction();
+    try {
+        const book = await bookRepository.findBookById(isbn, {
+            transaction,
+            attributes: {
+                exclude: ['createdAt', 'updatedAt']
+            },
+            include: [
+                {
+                    model: Author,
+                    as: 'authors',
+                    through: {
+                        attributes: []
+                    },
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt', 'birth_date'],
+                        include: ['name', [sequelize.col('birth_date'), 'birthDate']]
+                    }
+                }
+            ]
+        });
+        if (!book) {
+            throw new Error(`Book with ISBN ${isbn} not found`);
+        }
+        await book.update({title}, {transaction});
+        await transaction.commit();
+        return book;
+    } catch (e) {
+        await transaction.rollback();
+        console.log('Error updating book:', e);
+        throw e;
+    }
 }
 
 export const findBooksByAuthor = async (authorName) => {
