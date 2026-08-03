@@ -132,7 +132,29 @@ export const updateBookTitle = async (isbn, title) => {
 }
 
 export const findBooksByAuthor = async (authorName) => {
-    // TODO: Implement findBooksByAuthor service
+    const author = await authorRepository.findAuthorById(authorName);
+    if (!author) {
+        throw new Error(`Author with name ${authorName} not found`);
+    }
+    return await author.getBooks({
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        },
+        joinTableAttributes: [],
+        include: [
+            {
+                model: Author,
+                as: 'authors',
+                through: {
+                    attributes: []
+                },
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'birth_date'],
+                    include: ['name', [sequelize.col('birth_date'), 'birthDate']]
+                }
+            }
+        ]
+    });
 }
 
 export const findBooksByPublisher = async (publisherName) => {
